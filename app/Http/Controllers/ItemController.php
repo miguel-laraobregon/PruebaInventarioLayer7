@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Requests\UpdateItemRequest;
 use App\Models\Item;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 
 class ItemController extends Controller
 {
@@ -13,7 +15,10 @@ class ItemController extends Controller
      */
     public function index()
     {
-        //
+        $items = Item::with('user:id,name')->get();
+        return view('items.index', [
+            'items' => $items
+        ]);
     }
 
     /**
@@ -21,7 +26,7 @@ class ItemController extends Controller
      */
     public function create()
     {
-        //
+        return view('items.create');
     }
 
     /**
@@ -29,7 +34,11 @@ class ItemController extends Controller
      */
     public function store(StoreItemRequest $request)
     {
-        //
+        $validated = array_merge($request->validated(), ['user_id' => Auth::id()]);
+
+        $item = Item::create($validated);
+
+        return redirect()->route('items.index');
     }
 
     /**
@@ -37,7 +46,7 @@ class ItemController extends Controller
      */
     public function show(Item $item)
     {
-        //
+        return view('items.show', ['item' => $item]);
     }
 
     /**
@@ -45,7 +54,8 @@ class ItemController extends Controller
      */
     public function edit(Item $item)
     {
-        //
+        Gate::authorize('edit-item',$item);
+        return view('items.edit', ['item' => $item]);
     }
 
     /**
@@ -53,7 +63,11 @@ class ItemController extends Controller
      */
     public function update(UpdateItemRequest $request, Item $item)
     {
-        //
+        Gate::authorize('edit-item',$item);
+        $validated = $request->validated();
+        $item->update($validated);
+
+        return redirect()->route('items.index');
     }
 
     /**
@@ -61,6 +75,8 @@ class ItemController extends Controller
      */
     public function destroy(Item $item)
     {
-        //
+        Gate::authorize('edit-item',$item);
+        $item->delete();
+        return redirect()->route('items.index');
     }
 }
